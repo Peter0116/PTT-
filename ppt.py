@@ -2,6 +2,7 @@ import requests
 import bs4
 from datetime import datetime, timedelta
 import re
+import sys
 
 def find_article_content(article_url):#進入文章連結後，只留下連結內的主要內文
     article_url=article_url
@@ -15,6 +16,7 @@ def find_article_content(article_url):#進入文章連結後，只留下連結�
 
 
 def find_sock_article(index): #找尋股票公司(只搜尋今天與昨天的文章,印出標題/網址/內文)
+    global count
     url=r'https://www.ptt.cc/bbs/Stock/index%d.html' % index
     headers = {'user-agent': 'Mozilla/5.0 (Macintosh Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36'}
     ppthtml=requests.get(url,cookies={'over18':'1'},headers=headers)
@@ -32,7 +34,10 @@ def find_sock_article(index): #找尋股票公司(只搜尋今天與昨天的文
                 if date_final>yesterday:
                     title=i.find('a').text
                     if stock in title:
+                        count+=1
                         article_url='https://www.ptt.cc'+i.find('a')['href']
+                        print("第%s篇:" % (count))
+                        print("發文時間:"+str(date))
                         print("標題:"+i.find('a').text)
                         print("網址:https://www.ptt.cc"+i.find('a')['href'])
                         print("內文:"+find_article_content(article_url))
@@ -48,7 +53,7 @@ def last_page(url):   #找尋回上一頁連結的網址
     num=re.search(r'\d{2,6}',last_page)
     return num.group()
 
-
+count=0
 stock=input("輸入要找的股票公司")
 url='https://www.ptt.cc/bbs/Stock/index.html'
 
@@ -58,9 +63,4 @@ end=start-number
 for index in range(start+1,end,-1):
     find_sock_article(index)
 
-
-
-
-
-
-
+sys.exit("抓取結束")
