@@ -31,30 +31,35 @@ def find_next_500_content(num):#從第num篇-num+500篇評論
     global articleId
     if count == num:
         skipCount=num
-        cmoney_content_url='https://www.cmoney.tw/follow/channel/getdata/articlelistmoreofstockv2?articleCategory=Personal&channelId=%s&articleId=%s&size=%s&skipCount=%s&articleSortCount=0&sTime=&articleSortType=latest&isIncludeLimitedAskArticle=false&_' % (channelId,articleId,size,skipCount)#500-1000
+        cmoney_content_url='https://www.cmoney.tw/follow/channel/getdata/articlelistmoreofstockv2?articleCategory=Personal&channelId=%s&articleId=%s&size=500&skipCount=%s&articleSortCount=0&sTime=&articleSortType=latest&isIncludeLimitedAskArticle=false&_=' % (channelId,articleId,skipCount)#500-1000
+        print(cmoney_content_url)
         try:
             content_json=requests.get(cmoney_content_url)
-            print("成功獲取第(n-500)~n的評論")
+            print("成功獲取第num篇-num+500篇評論")
         except Exception as err:
-            print("獲取失敗")
-        data=json.loads(content_json.text)
-        for i in range(size):
-            cmoney_content_time=data[i]['ArtCteTm'].replace("/","-")
-            cmoney_content_time_final=datetime.strptime(cmoney_content_time,'%Y-%m-%d %H:%M')#發文時間(將字串格式化成時間)
-            yesterday=(datetime.now()+timedelta(-1)).replace(hour=0,minute=0,second=0)#抓取範圍為昨天凌成00:00以後
-            if cmoney_content_time_final>yesterday:
-                count+=1
-                cmoney_content=data[i]['ArtCtn']
-                txt_soup=bs4.BeautifulSoup(cmoney_content,'lxml')
-                cmoney_content_txt=txt_soup.find('div','main-content').text #發文內容
-                articleId=data[499]['ArtId']
-                print("第%s篇" % (count))
-                print(cmoney_content_txt)
-                print(cmoney_content_time_final)
-                print(data[i]['ArtId'])
-                print("-"*50+"分隔線"+"-"*50)
-                if count == num+500:
-                    break
+            print("錯誤原因:"+err)
+        try:
+            data=json.loads(content_json.text)
+            for i in range(size):
+                cmoney_content_time=data[i]['ArtCteTm'].replace("/","-")
+                cmoney_content_time_final=datetime.strptime(cmoney_content_time,'%Y-%m-%d %H:%M')#發文時間(將字串格式化成時間)
+                yesterday=(datetime.now()+timedelta(-1)).replace(hour=0,minute=0,second=0)#抓取範圍為昨天凌成00:00以後
+                if cmoney_content_time_final>yesterday:
+                    count+=1
+                    cmoney_content=data[i]['ArtCtn']
+                    txt_soup=bs4.BeautifulSoup(cmoney_content,'lxml')
+                    cmoney_content_txt=txt_soup.find('div','main-content').text #發文內容
+                    articleId=data[499]['ArtId']
+                    print("第%s篇" % (count))
+                    print(cmoney_content_txt)
+                    print(cmoney_content_time_final)
+                    print(data[i]['ArtId'])
+                    print("-"*50+"分隔線"+"-"*50)
+                    if count == num+500:
+                        break
+        except Exception as err:
+            print("錯誤原因",err)
+            print("獲取不到更多評論")
 
 stock=input("輸入要找的股票公司")
 
@@ -103,7 +108,7 @@ for i in range(size):
         print("-"*50+"分隔線"+"-"*50)
         if count == 500: #如果爬取500則停止
             break
-for i in range(10):
+for i in range(10): 
     if i == 0:
         continue
     else:
@@ -112,3 +117,9 @@ for i in range(10):
 
 
 browser.close()
+    
+        
+
+
+
+
