@@ -1,6 +1,6 @@
 import requests
 import bs4
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 
 def find_article_content(article_url):#進入文章連結後，只留下連結內的主要內文
@@ -20,20 +20,23 @@ def find_sock_article(index): #找尋股票公司(只搜尋今天與昨天的文
     ppthtml=requests.get(url,cookies={'over18':'1'},headers=headers)
     objsoup=bs4.BeautifulSoup(ppthtml.text,'lxml')
     pttdiv=objsoup.find_all('div',"r-ent")
-    today=[datetime.now().month,datetime.now().day]
-    yesterday=[datetime.now().month,datetime.now().day-1]
+    yesterday=(datetime.now()+timedelta(days=-2)).replace(hour=0,minute=0,second=0)
     for i in pttdiv:
-        if i.find('a'):
-            date=i.find('div','date').text.split("/")
-            date=list(map(int,date))
-            if date == today or date==yesterday:
-                title=i.find('a').text
-                if stock in title:
-                    article_url='https://www.ptt.cc'+i.find('a')['href']
-                    print("標題:"+i.find('a').text)
-                    print("網址:https://www.ptt.cc"+i.find('a')['href'])
-                    print("內文:"+find_article_content(article_url))
-                    print("-"*50+"分隔線"+"-"*50)
+            if i.find('a'):
+                date=i.find('div','date').text.split("/")
+                date[0]=date[0].replace( ' ' , '0' )
+                date.append(str(datetime.now().year))
+                dateString="-".join(date)
+                dateFormatter = "%m-%d-%Y"
+                date_final=datetime.strptime(dateString, dateFormatter)
+                if date_final>yesterday:
+                    title=i.find('a').text
+                    if stock in title:
+                        article_url='https://www.ptt.cc'+i.find('a')['href']
+                        print("標題:"+i.find('a').text)
+                        print("網址:https://www.ptt.cc"+i.find('a')['href'])
+                        print("內文:"+find_article_content(article_url))
+                        print("-"*50+"分隔線"+"-"*50)
 
 def last_page(url):   #找尋回上一頁連結的網址
     url=url
