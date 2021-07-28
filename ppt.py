@@ -63,4 +63,4 @@ end=start-number
 for index in range(start+1,end,-1):
     find_sock_article(index)
 
-sys.exit("抓取結束")
+sys.exit("抓取結束,無資料代表兩天內無相關討論文章")
