@@ -44,4 +44,4 @@ for i in range(1000):
     else:
         break
 
-sys.exit("抓取結束")
+sys.exit("抓取結束,無資料代表兩天內無相關討論文章")
