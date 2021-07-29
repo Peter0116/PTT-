@@ -2,10 +2,17 @@ from datetime import datetime, timedelta
 import requests
 import bs4
 import sys
+import sqlite3
+import pandas as pd
+
 
 count=0
 stock=input("輸入要找的股票公司")
 page=0
+
+connect = sqlite3.connect('News.db')
+cursor = connect.cursor()
+df= pd.DataFrame(columns= ["date","hour", "ticker","url","title","content"])
 
 for i in range(20): #抓取20頁 每頁20筆新聞
     page+=1
@@ -31,10 +38,14 @@ for i in range(20): #抓取20頁 每頁20筆新聞
             news_html=requests.get(news_url)
             news_soup=bs4.BeautifulSoup(news_html.text,'lxml')
             news_content=news_soup.find('div','article-body').find_all('p')
-            for i in news_content:
-                print(i.text.replace(u'\xa0', u' '))
+            content = "".join([i.text.replace(u'\xa0', u' ') for i in news_content])
+            payload = [*(str(news_date).split()), stock, news_url, news_title, content]
+            df.loc[len(df)] = payload
             print("-"*50+"分隔線"+"-"*50)
         else:
             break
+
+df.to_sql(f'chinatime', connect, if_exists='append', index=False)
+connect.commit()
 
 sys.exit("抓取結束,無資料代表兩天內無相關新聞")
