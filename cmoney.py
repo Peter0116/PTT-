@@ -5,6 +5,9 @@ import bs4
 import requests
 import re
 import json
+import pandas as pd
+import sqlite3
+import sys
 # def Scroll_window(): #滾動視窗到最底端(為了加載更新讓舊的評論出現)
 #     browser.execute_script("window.scrollTo(0, document.body.scrollHeight)")
 
@@ -26,42 +29,53 @@ def find_stock_ID(): #找尋公司在網頁的特定ID
     Channel_Id=list(re.search(pattern,Find_Id).group())[13:-1]
     ChannelId="".join(Channel_Id)
     return ChannelId
-def find_next_500_content(num):#從第num篇-num+500篇評論
-    global count
-    global articleId
-    if count == num:
-        skipCount=num
-        cmoney_content_url='https://www.cmoney.tw/follow/channel/getdata/articlelistmoreofstockv2?articleCategory=Personal&channelId=%s&articleId=%s&size=500&skipCount=%s&articleSortCount=0&sTime=&articleSortType=latest&isIncludeLimitedAskArticle=false&_=' % (channelId,articleId,skipCount)#500-1000
-        print(cmoney_content_url)
-        try:
-            content_json=requests.get(cmoney_content_url)
-            print("成功獲取第num篇-num+500篇評論")
-        except Exception as err:
-            print("錯誤原因:"+err)
-        try:
-            data=json.loads(content_json.text)
-            for i in range(size):
-                cmoney_content_time=data[i]['ArtCteTm'].replace("/","-")
-                cmoney_content_time_final=datetime.strptime(cmoney_content_time,'%Y-%m-%d %H:%M')#發文時間(將字串格式化成時間)
-                yesterday=(datetime.now()+timedelta(-1)).replace(hour=0,minute=0,second=0)#抓取範圍為昨天凌成00:00以後
-                if cmoney_content_time_final>yesterday:
-                    count+=1
-                    cmoney_content=data[i]['ArtCtn']
-                    txt_soup=bs4.BeautifulSoup(cmoney_content,'lxml')
-                    cmoney_content_txt=txt_soup.find('div','main-content').text #發文內容
-                    articleId=data[499]['ArtId']
-                    print("第%s篇" % (count))
-                    print(cmoney_content_txt)
-                    print(cmoney_content_time_final)
-                    print(data[i]['ArtId'])
-                    print("-"*50+"分隔線"+"-"*50)
-                    if count == num+500:
-                        break
-        except Exception as err:
-            print("錯誤原因",err)
-            print("獲取不到更多評論")
+# def find_next_500_content(num):#從第num篇-num+500篇評論
+#     global count
+#     global articleId
+#     if count == num:
+#         skipCount=num
+#         cmoney_content_url='https://www.cmoney.tw/follow/channel/getdata/articlelistmoreofstockv2?articleCategory=Personal&channelId=%s&articleId=%s&size=500&skipCount=%s&articleSortCount=0&sTime=&articleSortType=latest&isIncludeLimitedAskArticle=false&_=' % (channelId,articleId,skipCount)#500-1000
+#         print(cmoney_content_url)
+#         try:
+#             content_json=requests.get(cmoney_content_url)
+#             print("成功獲取第num篇-num+500篇評論")
+#         except Exception as err:
+#             print("錯誤原因:"+err)
+#         try:
+#             data=json.loads(content_json.text)
+#             for i in range(size):
+#                 cmoney_content_time=data[i]['ArtCteTm'].replace("/","-")
+#                 article_date=datetime.strptime(cmoney_content_time,'%Y-%m-%d %H:%M')#發文時間(將字串格式化成時間)
+#                 yesterday=(datetime.now()+timedelta(-1)).replace(hour=0,minute=0,second=0)#抓取範圍為昨天凌成00:00以後
+#                 if article_date>yesterday:
+#                     count+=1
+#                     cmoney_content=data[i]['ArtCtn']
+#                     txt_soup=bs4.BeautifulSoup(cmoney_content,'lxml')
+#                     content=txt_soup.find('div','main-content').text #發文內容
+#                     articleId=data[499]['ArtId']
+#                     print("第%s篇" % (count))
+#                     print(content)
+#                     print(article_date)
+#                     print(data[i]['ArtId'])
+#                     print("-"*50+"分隔線"+"-"*50)
+#                     if count == num+500:
+#                         break
+#         except Exception as err:
+#             print("錯誤原因",err)
+#             print("獲取不到更多評論")
 
 stock=input("輸入要找的股票公司")
+
+fn='stock_code_name.json' #請先下載 stock_code_name.json 檔案 並修改fn路徑
+with open (fn,'r',encoding="utf-8") as fnobj:
+    datas=json.load(fnobj)
+for data in datas:
+    if data[1]==stock:
+        stock_ticker=(data[0]) #將股票公司名子轉換成股票公司代碼
+
+connect = sqlite3.connect('News.db')
+cursor = connect.cursor()
+df= pd.DataFrame(columns= ["date","hour","ticker","url","title","content"])
 
 options = webdriver.ChromeOptions()
 options.add_experimental_option('excludeSwitches', ['enable-logging'])
@@ -94,26 +108,33 @@ data=json.loads(content_json.text)
 articleId=data[499]['ArtId']
 for i in range(size):
     cmoney_content_time=data[i]['ArtCteTm'].replace("/","-")
-    cmoney_content_time_final=datetime.strptime(cmoney_content_time,'%Y-%m-%d %H:%M')#發文時間(將字串格式化成時間)
+    article_date=datetime.strptime(cmoney_content_time,'%Y-%m-%d %H:%M')#發文時間(將字串格式化成時間)
+    today=datetime.now().replace(hour=0,minute=0,second=0)
     yesterday=(datetime.now()+timedelta(-1)).replace(hour=0,minute=0,second=0)#抓取範圍為昨天00:00以後
-    if cmoney_content_time_final>yesterday:
+    if article_date>yesterday:
         count+=1
         cmoney_content=data[i]['ArtCtn']
         txt_soup=bs4.BeautifulSoup(cmoney_content,'lxml')
-        cmoney_content_txt=txt_soup.find('div','main-content').text #發文內容
+        content=txt_soup.find('div','main-content').text #發文內容
+        article_url='https://www.cmoney.tw/follow/channel/article-'+data[i]['ArtId']
+        payload = [*(str(article_date).split()), stock_ticker, article_url, str(content), str(content)]
+        df.loc[len(df)] = payload
         print("第%s篇" % (count)) #第N則評論
-        print(cmoney_content_txt) #評論內容
-        print(cmoney_content_time_final) #發文時間
-        print(data[i]['ArtId']) #發文作者ID代碼
+        print(content) #評論內容
+        print(article_date) #發文時間
+        print(article_url) #文章連結
         print("-"*50+"分隔線"+"-"*50)
         if count == 500: #如果爬取500則停止
             break
-for i in range(10): 
-    if i == 0:
-        continue
-    else:
-        find_next_500_content(i*500)
-        time.sleep(1)
 
+# for i in range(10): 
+#     if i == 0:
+#         continue
+#     else:
+#         find_next_500_content(i*500)
+#         time.sleep(1)
 
+df.to_sql(f'cmoney', connect, if_exists='append', index=False)
+connect.commit()
 browser.close()
+sys.exit("抓取結束,無資料代表今天無相關新聞") 
