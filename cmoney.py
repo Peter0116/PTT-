@@ -94,7 +94,8 @@ time.sleep(3)
 
 channelId=find_stock_ID()
 size=500 #一次讀取500筆資料(一次最多500)
-cmoney_content_url='https://www.cmoney.tw/follow/channel/getdata/articlelistofstockv2?articleCategory=Personal&channelId=%s&size=%s&skipCount=500&sTime=&articleSortType=latest&articleSortCount=0&isIncludeLimitedAskArticle=false&_' % (channelId,size)#前500個
+cmoney_content_url='https://www.cmoney.tw/follow/channel/getdata/articlelistofstockv2?articleCategory=Personal&channelId=%s&size=%s&sTime=&articleSortType=latest&articleSortCount=0&isIncludeLimitedAskArticle=false&_' % (channelId,size)#前500個
+
 try:
     content_json=requests.get(cmoney_content_url)
     print("成功獲取1-500則評論")
@@ -105,7 +106,6 @@ except Exception as err:
 count=0 #計算評論數量
 
 data=json.loads(content_json.text)
-articleId=data[499]['ArtId']
 for i in range(size):
     cmoney_content_time=data[i]['ArtCteTm'].replace("/","-")
     article_date=datetime.strptime(cmoney_content_time,'%Y-%m-%d %H:%M')#發文時間(將字串格式化成時間)
@@ -126,6 +126,8 @@ for i in range(size):
         print("-"*50+"分隔線"+"-"*50)
         if count == 500: #如果爬取500則停止
             break
+    else:
+        break
 
 # for i in range(10): 
 #     if i == 0:
